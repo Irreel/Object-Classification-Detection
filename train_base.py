@@ -3,16 +3,15 @@ import time
 import pickle
 import argparse
 import datetime
-import numpy as np
 import torch
-from torchvision.datasets import CIFAR100
-from torchvision.models import resnet18, resnet34, resnet50, resnet101, resnet152, alexnet
-from trainer import TrainerConfig, Trainer
+import torch.optim as optim
+from torch.optim import lr_schedulers
+import torch.nn.functional as F
+import numpy as np
+# from trainer import Trainer
 from torch.utils.tensorboard import SummaryWriter
 
-from utils.transf import transf_baseline
-
-# os.environ["CUDA_VISIBLE_DEVICES"] = '2'
+os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 
 parser = argparse.ArgumentParser()
 # Environment and datasetss
@@ -26,7 +25,7 @@ parser.add_argument('--validation-split', type=float, default=0.1,
 parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs to train.')
 parser.add_argument('--early-stop', type=int, default=10)
-parser.add_argument('--batch-size', type=int, default=32,
+parser.add_argument('--batch-size', type=int, default=128,
                         help='Number of samples per batch.')
 parser.add_argument('--lr', type=float, default=1e-3,
                         help='Initial learning rate.')
@@ -51,6 +50,7 @@ np.random.seed(SEED)
 if args.cuda:
     torch.cuda.manual_seed(SEED)
     device_ids = args.device_id.split(",")
+    # device = torch.device("cuda:{}".format("0") if torch.cuda.is_available() else "cpu")
     print(f"device_ids: {device_ids}")
     device = torch.device("cuda:{}".format(device_ids[0]) if torch.cuda.is_available() else "cpu")
     device_ids = list(map(int, device_ids))
@@ -72,25 +72,88 @@ if args.save_folder:
     if args.tensorboard: writer = SummaryWriter('{}/date{}/tensorboard/'.format(args.save_folder, timestamp))
 
 
+def train(epoch, best_val_loss, best_val_metric):
+    t = time.time()
+    ## Training stage
+    train_loss = []
+    # TODO
+    
+    ## Valid stages
+    val_loss = []
+    # TODO
+    
+    # Save model
+    if args.save_folder and np.mean(val_loss) < best_val_loss:
+        ## torch.save(model.cpu().state_dict(), model_file)
+        ## torch.save(model.state_dict(), model_file)
+        print('Best model so far, saving...')
+        print('Epoch: {:04d}'.format(epoch),
+            # 'train_loss: {:.10f}'.format(train_loss),
+            # 'val_loss: {:.10f}'.format((val_loss)),              
+            'time: {:.4f}s'.format(time.time() - t), file=log)
+        log.flush()
+        
+    # return np.mean(train_loss), train_metric, np.mean(val_loss), val_metric
+
+
 if __name__ == '__main__':
+    
+    ## setup data_loader instances
+    # data_loader = 
+    # valid_data_loader = 
+
+    ## build model architecture, then print to console
+    # model = 
+    # print(model.info())
+    # if args.cuda: model.cuda()
+    # model.train()
+
     ## prepare for (multi-device) GPU training
+    # device, device_ids = 
     # model = model.to(device)
     # if len(device_ids) > 1:
     #     model = torch.nn.DataParallel(model, device_ids=device_ids)
 
-    ## setup data_loader instances
-    train_dataset = CIFAR100('data/', train=True, transform=transf_baseline, target_transform=None)
-    valid_dataset = CIFAR100('data/', train=False, transform=transf_baseline, target_transform=None)
+    ## get function handles of loss and metrics
+    # loss = 
+    # metrics = 
 
-    ## build model architecture, then print to console
-    model = resnet18()
-    # model = resnet34()
-    # model = resnet101()
-    # model = alexnet()
-    # print(model)
+    ## Optimizer and Scheduler
+    # optimizer = optim.Adam(list(model.parameters()),
+    #                     lr=args.lr)
+    # scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_decay,
+    #                                 gamma=args.gamma)
+
+    # Train model
+    t_total = time.time()
+    best_val_loss = np.inf
+    # best_val_metric = 0
+    best_epoch = 0
     
-    cfg = TrainerConfig(max_epoch = args.epochs)
-    trainer = Trainer(model, device, log, train_dataset=train_dataset, valid_dataset=valid_dataset, config=cfg)
-    trainer.train(args)
+    ## Pass args to train function
+    # trainer = Trainer(model, criterion, metrics, optimizer,
+    #                   args=args,
+    #                   device=device,
+    #                   data_loader=data_loader,
+    #                   valid_data_loader=valid_data_loader,
+    #                   scheduler=scheduler)
+    
+    ## train stage and valid stage
+    for epoch in range(args.epochs):
+        
+        # train_loss, train_metric, val_loss, val_metric = trainer.train(epoch, best_val_loss, best_val_metric, ...)
+        
+        # if val_loss < best_val_loss:
+            # best_val_loss = val_loss
+            # best_epoch = epoch
+        
+        pass
+    
+    print("Optimization Finished!")
+    print("Best Epoch: {:04d}".format(best_epoch))
+    if args.save_folder:
+        print("Best Epoch: {:04d}".format(best_epoch), file=log)
+        print(args, file=log)
+        log.flush()
 
     log.close()
