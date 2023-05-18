@@ -8,7 +8,11 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 import random
 from torch.utils.data.dataloader import DataLoader
-# from train_aug import *
+import matplotlib.pyplot as plt
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+class_indices={0:'airplane',1:'automobile',2:'bird',3:'cat',4:'deer',
+                       5:'dog',6:'frog',7:'horse',8:'ship',9:'truck'}
 
 class TrainerConfig:
     # optimization parameters
@@ -119,7 +123,30 @@ class Trainer:
                             x[:, :, bbx1:bbx2, bby1:bby2] = x[rand_index, :, bbx1:bbx2, bby1:bby2]
                             lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (x.size()[-1] * x.size()[-2]))
                         elif method=='mixup':
-                            x = lam * input + (1 - lam) * input[rand_index, :, :]
+                            x = lam * x + (1 - lam) * x[rand_index, :, :]
+
+                # visualize
+                num_imgs = 3
+                fig = plt.figure(figsize=(num_imgs * 5, 6), dpi=100)
+                for numkk in range(num_imgs):
+                    ax = fig.add_subplot(1, num_imgs, numkk + 1, xticks=[], yticks=[])
+                    img = x[numkk].cpu().numpy().transpose(1, 2, 0)
+                    img = (img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
+                    # if method == 'baseline':
+                    #     title = "{}\nlabel:{}".format(method, class_indices[int(y[numkk].cpu().numpy())])
+                    # elif method == 'cutout':
+                    #     title = "{}\nlabel:{}({})".format(method, class_indices[int(y[numkk].cpu().numpy())],
+                    #                                       np.round(lam, 2))
+                    # else:
+                    #     title = "{}\nlabel:{}({})\nadd label:{}({})".format(method,
+                    #                                                         class_indices[int(target_a[numkk].cpu().numpy())],
+                    #                                                         np.round(lam, 2),
+                    #                                                         class_indices[int(target_b[numkk].cpu().numpy())],
+                    #                                                         np.round(1 - lam, 2))
+                    # ax.set_title(title)
+                    plt.axis('off')
+                    plt.imshow(img.astype('uint8'))
+                plt.show()
 
                 # TODO forward the model
                 with torch.set_grad_enabled(is_train):
@@ -133,31 +160,6 @@ class Trainer:
                     # loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                     losses.append(lossFunc.item())
                     # losses.append(loss.item())
-
-                # visualize
-                num_imgs = 3
-                fig = plt.figure(figsize=(num_imgs * 5, 6), dpi=100)
-                for numkk in range(num_imgs):
-                    ax = fig.add_subplot(1, num_imgs, numkk + 1, xticks=[], yticks=[])
-                    img = x[numkk].cpu().numpy().transpose(1, 2, 0)
-                    img = (img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
-                    if method == 'baseline':
-                        title = "{}\nlabel:{}".format(method, class_indices[int(y[numkk].cpu().numpy())])
-                    elif method == 'cutout':
-                        title = "{}\nlabel:{}({})".format(method, class_indices[int(y[numkk].cpu().numpy())],
-                                                          np.round(lam, 2))
-                    else:
-                        title = "{}\nlabel:{}({})\nadd label:{}({})".format(method,
-                                                                            class_indices[
-                                                                                int(target_a[numkk].cpu().numpy())],
-                                                                            np.round(lam, 2),
-                                                                            class_indices[
-                                                                                int(target_b[numkk].cpu().numpy())],
-                                                                            np.round(1 - lam, 2))
-                    ax.set_title(title)
-                    plt.axis('off')
-                    plt.imshow(img.astype('uint8'))
-                plt.show()
 
                 if is_train:
                     # backprop and update the parameters
@@ -206,7 +208,7 @@ class Trainer:
                 self.log.flush()
                 return val_loss, None #valid_metric
 
-        def rand_bbox(self,size, lam):
+        def rand_bbox(size, lam):
             W = size[2]
             H = size[3]
             cut_rat = np.sqrt(1. - lam)
