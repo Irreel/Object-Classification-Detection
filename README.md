@@ -9,6 +9,10 @@
 - tqdm (Optional)
 
 
+Download dataset into `data/` folder.
+
+Model is saved into `logs/` by default, you can customized it via `--save-folder` argument.
+
 
 详细的实验报告包括实验设置：
 
