@@ -5,7 +5,7 @@ import argparse
 import datetime
 import torch
 import torch.optim as optim
-from torch.optim import lr_schedulers
+from torch.optim import lr_scheduler
 import torch.nn.functional as F
 import numpy as np
 # from trainer import Trainer

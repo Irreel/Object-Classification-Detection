@@ -22,6 +22,9 @@ parser.add_argument('--device-id', type=str, default='2',
                         help='Available gpu id. Disable when no-cuda is True')
 parser.add_argument('--validation-split', type=float, default=0.1, 
                         help='Split ratio for valid data')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+parser.add_argument('--method',type=str,default='baseline',
+                    help='Other data augmentation methods are mixup, cutmix and cutout')
 # Training parameters
 parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs to train.')
@@ -41,7 +44,9 @@ parser.add_argument('--tensorboard', type=bool, default=True)
     
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
+method = args.method
 print(args)
+print("method",method)
     
 # fix random seeds for reproducibility
 SEED = 42
@@ -79,8 +84,8 @@ if __name__ == '__main__':
     #     model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     ## setup data_loader instances
-    train_dataset = CIFAR100('data/', train=True, transform=transf_baseline, target_transform=None)
-    valid_dataset = CIFAR100('data/', train=False, transform=transf_baseline, target_transform=None)
+    train_dataset = CIFAR100('data/', train=True, download=False,transform=transf_baseline, target_transform=None)
+    valid_dataset = CIFAR100('data/', train=False, download=False,transform=transf_baseline, target_transform=None)
 
     ## build model architecture, then print to console
     model = resnet18()
@@ -90,7 +95,7 @@ if __name__ == '__main__':
     # print(model)
     
     cfg = TrainerConfig(max_epoch = args.epochs)
-    trainer = Trainer(model, device, log, train_dataset=train_dataset, valid_dataset=valid_dataset, config=cfg)
+    trainer = Trainer(model, device, log, method, train_dataset=train_dataset, valid_dataset=valid_dataset, config=cfg)
     trainer.train(args)
 
     log.close()

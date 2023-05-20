@@ -5,7 +5,7 @@ import argparse
 import datetime
 import torch
 import torch.optim as optim
-from torch.optim import lr_schedulers
+from torch.optim import lr_scheduler
 import torch.nn.functional as F
 import numpy as np
 
@@ -19,12 +19,14 @@ parser.add_argument('--device-id', type=str, default='2',
                         help='Available gpu id. Disable when no-cuda is True')
 # parser.add_argument('--validation-split', type=float, default=0.1, 
 #                         help='Split ratio for valid data')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Load and visualize
 parser.add_argument('--load-folder', type=str, default='saved',
                     help='Where to load the trained model')
 parser.add_argument('--tensorboard', type=bool, default=True)
-    
+parser.add_argument('--method',type=str,default='baseline',
+                    help='Other data augmentation methods are mixup, cutmix and cutout')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 print(args)
