@@ -28,7 +28,7 @@ parser.add_argument('--method',type=str,default='baseline',
 parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs to train.')
 parser.add_argument('--early-stop', type=int, default=10)
-parser.add_argument('--batch-size', type=int, default=32,
+parser.add_argument('--batch-size', type=int, default=128,
                         help='Number of samples per batch.')
 parser.add_argument('--lr', type=float, default=1e-3,
                         help='Initial learning rate.')

@@ -1,15 +1,17 @@
 import os
-
+import random
 from tqdm import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
 
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
-import random
 from torch.utils.data.dataloader import DataLoader
-import matplotlib.pyplot as plt
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+from utils.transf import rand_bbox
+from utils.metrics import topKAcc
+
 
 class_indices={0:'airplane',1:'automobile',2:'bird',3:'cat',4:'deer',
                        5:'dog',6:'frog',7:'horse',8:'ship',9:'truck'}
@@ -28,6 +30,7 @@ class TrainerConfig:
     # checkpoint settings
     ckpt_dir = None
     num_workers = 0  # for DataLoader
+    top = 5 # K value for topK accuracy
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -47,10 +50,7 @@ class Trainer:
 
         # print("Using tensorboards")
 
-        # take over whatever gpus are on the system
         self.device = device
-        if torch.cuda.is_available():
-            self.model = torch.nn.DataParallel(self.model).to(self.device)
 
     def save_checkpoint(self):
         # DataParallel wrappers keep raw model object in .module attribute
@@ -64,7 +64,7 @@ class Trainer:
         if method not in ['baseline', 'mixup', 'cutout', 'cutmix']:
             print('method error!')
 
-        if args.cuda: model.cuda()
+        if args.cuda: model.to(self.device)
         
         ## Optimizer and Scheduler
         optimizer = optim.Adam(list(model.parameters()),
@@ -73,12 +73,12 @@ class Trainer:
                                         gamma=args.lr_weight)
         
         # get function handles of loss and metrics
-        lossFunc = torch.nn.MSELoss(reduction="mean")
+        lossFunc = torch.nn.CrossEntropyLoss()
         # metrics = 
 
         # Train model
         best_val_loss = np.inf
-        # best_val_metric = 0
+        best_val_metric = 0
         best_epoch = 0
 
         def run_epoch(split):
@@ -89,7 +89,8 @@ class Trainer:
                                 batch_size=args.batch_size,
                                 num_workers=config.num_workers)
 
-            losses = []
+            losses = [] # loss list
+            accs = [] # accuracy list
             progress = tqdm(enumerate(loader), total=len(loader)) if is_train else enumerate(loader)
             for batch_idx, (x, y) in progress:
 
@@ -115,7 +116,7 @@ class Trainer:
                             bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
                     else:
                         lam = np.random.beta(1.0,1.0)
-                        rand_index = torch.randperm(x.size()[0]).to(device)
+                        rand_index = torch.randperm(x.size()[0]).to(self.device)
                         target_a = y
                         target_b = y[rand_index]
                         bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
@@ -148,83 +149,45 @@ class Trainer:
                     plt.imshow(img.astype('uint8'))
                 plt.show()
 
-                # TODO forward the model
+                # forward the model
                 with torch.set_grad_enabled(is_train):
-                    x_hat = model(x)
-                    # TODO sample run
-                    print("data load Succeed")
-                    raise Exception
-                    # TODO: update the model architecture & the output dimension
-                    # loss = lossFunc(x_hat, x)
-                    loss = lossFunc(x_hat,target_a)*lam + lossFunc(x_hat,target_b)*(1.-lam)
+                    logits = model(x)
+                    loss = lossFunc(logits,target_a)*lam + lossFunc(logits,target_b)*(1.-lam)                    
                     # loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
-                    losses.append(lossFunc.item())
-                    # losses.append(loss.item())
+                    losses.append(loss.item())
+                    
+                    # Calculate metrics
+                    if not is_train:
+                        acc = topKAcc(logits, y, K=config.top)
+                        accs.append(acc)     
 
                 if is_train:
                     # backprop and update the parameters
-                    lossFunc.backward()
+                    loss.backward()
                     optimizer.step()
                     self.steps += 1
-                    
-                    ## Decay strategy (TODO) may not compatible with scheduler
-                    # decay the learning rate based on our progress 
-                    # if config.lr_decay:
-                    #     if self.steps < config.warmup_iters:
-                    #         # linear warmup
-                    #         lr_mult = float(self.steps) / float(max(1, config.warmup_iters))
-                    #     else:
-                    #         # cosine learning rate decay
-                    #         progress = float(self.steps - config.warmup_iters) / float(max(1, config.final_iters - config.warmup_iters))
-                    #         lr_mult = max(0.1, 0.5 * (1.0 + math.cos(math.pi * progress)))
-                            
-                    #     lr = config.learning_rate * lr_mult
-                    #     for param_group in optimizer.param_groups:
-                    #         param_group['lr'] = lr
-                    # else:
-                    #     lr = config.learning_rate
 
-                    if is_train:
-                        # report progress
-                        print("train loss: {:04d}".format(lossFunc.item()), file=self.log)
-                        # print("train loss: {:04d}".format(loss.item()), file=self.log)
-                        print("lr: {:04d}".format(lr), file=self.log)
-                        print("epoch {:04d}".format(epoch+1), file=self.log)
-                        print("step {:04d}".format(self.steps), file=self.log)
+                    # report progress
+                    print("train loss: {:04f}".format(loss.item()), file=self.log)                      
+                    # print("lr: {:04d}".format(lr), file=self.log)
+                    print("epoch {:04d}".format(epoch+1), file=self.log)
                         
-                        progress.set_description(f"epoch {epoch+1} iter {batch_idx}: train loss {lossFunc.item():.5f}. lr {lr:e}")
+                    progress.set_description(f"epoch {epoch+1} iter {batch_idx}: train loss {loss.item():.5f}.")
 
             if is_train:
                 scheduler.step()
                 torch.cuda.empty_cache()
-                return train_loss, None # train_metric
-                # return losses, None
+                train_loss = float(np.mean(losses))
+                return train_loss, None
             else:
                 print("-------TEST-------")
                 val_loss = float(np.mean(losses))
+                val_metric = float(np.mean(accs))
                 print("val loss: %f", val_loss, file=self.log)
-                # print("val metric: %f", None, file=self.log)
-                print("step: %d", self.steps, file=self.log)
+                print("val metric: %f", val_metric, file=self.log)
                 self.log.flush()
-                return val_loss, None #valid_metric
+                return val_loss, val_metric
 
-        def rand_bbox(size, lam):
-            W = size[2]
-            H = size[3]
-            cut_rat = np.sqrt(1. - lam)
-            cut_w = int(W * cut_rat)
-            cut_h = int(H * cut_rat)
-
-            # uniform
-            cx = np.random.randint(W)
-            cy = np.random.randint(H)
-
-            bbx1 = np.clip(cx - cut_w // 2, 0, W)
-            bby1 = np.clip(cy - cut_h // 2, 0, H)
-            bbx2 = np.clip(cx + cut_w // 2, 0, W)
-            bby2 = np.clip(cy + cut_h // 2, 0, H)
-
-            return bbx1, bby1, bbx2, bby2
 
         ## train stage and valid stage
         for epoch in range(config.max_epochs):
@@ -239,7 +202,7 @@ class Trainer:
                 best_val_loss = valid_loss
                 # best_val_metric
                 best_epoch = epoch
-                self.save_checkpoint()
+                self.save_checkpoint()   
      
         print("Optimization Finished!")
         print("Best Epoch: {:04d}".format(best_epoch))
