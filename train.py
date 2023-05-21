@@ -6,11 +6,11 @@ import datetime
 import numpy as np
 import torch
 from torchvision.datasets import CIFAR100
-from torchvision.models import resnet18, resnet34, resnet50, resnet101, resnet152, alexnet
 from trainer import TrainerConfig, Trainer
 from torch.utils.tensorboard import SummaryWriter
 
-from utils.transf import transf_baseline
+from utils.transf import transfm_baseline
+from model.task1 import get_model
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 
@@ -22,7 +22,6 @@ parser.add_argument('--device-id', type=str, default='2',
                         help='Available gpu id. Disable when no-cuda is True')
 parser.add_argument('--validation-split', type=float, default=0.1, 
                         help='Split ratio for valid data')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 parser.add_argument('--method',type=str,default='baseline',
                     help='Other data augmentation methods are mixup, cutmix and cutout')
 # Training parameters
@@ -59,6 +58,8 @@ if args.cuda:
     print(f"device_ids: {device_ids}")
     device = torch.device("cuda:{}".format(device_ids[0]) if torch.cuda.is_available() else "cpu")
     device_ids = list(map(int, device_ids))
+else:
+    device = torch.device("cpu")
     
 # Save model and meta-data. Always saves in a new sub-folder.
 if args.save_folder:
@@ -84,14 +85,11 @@ if __name__ == '__main__':
     #     model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     ## setup data_loader instances
-    train_dataset = CIFAR100('data/', train=True, download=False,transform=transf_baseline, target_transform=None)
-    valid_dataset = CIFAR100('data/', train=False, download=False,transform=transf_baseline, target_transform=None)
+    train_dataset = CIFAR100('data/', train=True, download=False,transform=transfm_baseline, target_transform=None)
+    valid_dataset = CIFAR100('data/', train=False, download=False,transform=transfm_baseline, target_transform=None)
 
-    ## build model architecture, then print to console
-    model = resnet18()
-    # model = resnet34()
-    # model = resnet101()
-    # model = alexnet()
+    ## setup model
+    model = get_model()
     # print(model)
     
     cfg = TrainerConfig(max_epoch = args.epochs)

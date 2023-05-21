@@ -13,6 +13,11 @@ Download dataset into `data/` folder.
 
 Model is saved into `logs/` by default, you can customized it via `--save-folder` argument.
 
+## Training
+`python train.py --method baseline`
+
+- Loss function: CrossEntrophyLoss
+- Metrics: Top5 accuracy
 
 详细的实验报告包括实验设置：
 

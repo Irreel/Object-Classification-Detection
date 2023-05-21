@@ -19,7 +19,6 @@ parser.add_argument('--device-id', type=str, default='2',
                         help='Available gpu id. Disable when no-cuda is True')
 # parser.add_argument('--validation-split', type=float, default=0.1, 
 #                         help='Split ratio for valid data')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Load and visualize
 parser.add_argument('--load-folder', type=str, default='saved',
@@ -43,6 +42,8 @@ if args.cuda:
     print(f"device_ids: {device_ids}")
     device = torch.device("cuda:{}".format(device_ids[0]) if torch.cuda.is_available() else "cpu")
     device_ids = list(map(int, device_ids))
+else:
+    device = torch.device("cpu")
     
     
 def main(args):
