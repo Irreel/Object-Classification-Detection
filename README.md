@@ -16,8 +16,14 @@ Model is saved into `logs/` by default, you can customized it via `--save-folder
 ## Training
 `python train.py --method baseline`
 
+- Batch size: 128
+- Optimizer: Adam
+- Scheduler: [StepLR](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.StepLR.html?highlight=steplr#torch.optim.lr_scheduler.StepLR)
 - Loss function: CrossEntrophyLoss
 - Metrics: Top5 accuracy
+
+
+[实验报告(Google Docs)](https://docs.google.com/document/d/1f-ELCHgz8NBzv_fX20z3Q0d2B0p74GKE2hnWBn19QKQ/edit?usp=sharing)
 
 详细的实验报告包括实验设置：
 
