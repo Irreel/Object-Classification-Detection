@@ -53,8 +53,7 @@ class Trainer:
         self.device = device
 
     def save_checkpoint(self):
-        # DataParallel wrappers keep raw model object in .module attribute
-        raw_model = self.model.module if hasattr(self.model, "module") else self.model
+        raw_model = self.model
         ckpt_path = os.path.join(self.config.ckpt_dir, 'checkpoint.pth')
         torch.save(raw_model.state_dict(), ckpt_path)
 
@@ -78,7 +77,7 @@ class Trainer:
 
         # Train model
         best_val_loss = np.inf
-        best_val_metric = 0
+        best_val_metric = -np.inf
         best_epoch = 0
 
         def run_epoch(split):
