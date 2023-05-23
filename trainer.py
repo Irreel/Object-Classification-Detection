@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from utils.transf import rand_bbox
 from utils.metrics import topKAcc
+from utils.write_tsrbd import write_tensorboard
 
 
 class_indices={0:'airplane',1:'automobile',2:'bird',3:'cat',4:'deer',
@@ -39,7 +40,7 @@ class TrainerConfig:
 
 class Trainer:
 
-    def __init__(self, model, device, log, method,train_dataset, valid_dataset, config):
+    def __init__(self, model, device, log, method,train_dataset, valid_dataset, config, tsrbd):
         self.model = model
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
@@ -51,6 +52,9 @@ class Trainer:
         # print("Using tensorboards")
 
         self.device = device
+        
+        # tensorboard writer
+        self.writer = tsrbd
 
     def save_checkpoint(self):
         raw_model = self.model
@@ -173,6 +177,9 @@ class Trainer:
                         
                     progress.set_description(f"epoch {epoch+1} iter {batch_idx}: train loss {loss.item():.5f}.")
 
+                        # tensorboard
+    
+
             if is_train:
                 scheduler.step()
                 torch.cuda.empty_cache()
@@ -202,6 +209,13 @@ class Trainer:
                 # best_val_metric
                 best_epoch = epoch
                 self.save_checkpoint()   
+                
+            # tensorboard visualization
+            if args.tensorboard and self.writer is not None:
+                loss_dict = {}
+                loss_dict["train"] = train_loss
+                loss_dict["valid"] = valid_loss
+                write_tensorboard(loss_dict, valid_metric, self.writer, epoch)
      
         print("Optimization Finished!")
         print("Best Epoch: {:04d}".format(best_epoch))
