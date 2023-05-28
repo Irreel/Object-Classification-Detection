@@ -22,6 +22,11 @@ Model is saved into `logs/` by default, you can customized it via `--save-folder
 - Loss function: CrossEntrophyLoss
 - Metrics: Top5 accuracy
 
+## Visualization results
+- Tensorboard results:
+Given the file in `/logs`,
+open tensorboard via `tensorboard --logdir ./tensorboard`
+
 
 [实验报告(Google Docs)](https://docs.google.com/document/d/1f-ELCHgz8NBzv_fX20z3Q0d2B0p74GKE2hnWBn19QKQ/edit?usp=sharing)
 
