@@ -25,14 +25,14 @@ parser.add_argument('--validation-split', type=float, default=0.1,
 parser.add_argument('--method',type=str,default='baseline',
                     help='Other data augmentation methods are mixup, cutmix and cutout')
 # Training parameters
-parser.add_argument('--epochs', type=int, default=100,
+parser.add_argument('--epochs', type=int, default=80,
                         help='Number of epochs to train.')
 parser.add_argument('--early-stop', type=int, default=10)
 parser.add_argument('--batch-size', type=int, default=128,
                         help='Number of samples per batch.')
 parser.add_argument('--lr', type=float, default=1e-3,
                         help='Initial learning rate.')
-parser.add_argument('--lr-decay', type=int, default=50,
+parser.add_argument('--lr-decay', type=int, default=40,
                     help='After how epochs to decay LR by a factor of gamma.')
 parser.add_argument('--lr-weight', type=float, default=0.1,
                         help='LR decay factor.')
