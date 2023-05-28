@@ -3,6 +3,7 @@ import random
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 import torch
 import torch.optim as optim
@@ -14,8 +15,109 @@ from utils.metrics import topKAcc
 from utils.write_tsrbd import write_tensorboard
 
 
-class_indices={0:'airplane',1:'automobile',2:'bird',3:'cat',4:'deer',
-                       5:'dog',6:'frog',7:'horse',8:'ship',9:'truck'}
+class_indices = {
+    0: 'apple',
+    1: 'aquarium_fish',
+    2: 'baby',
+    3: 'bear',
+    4: 'beaver',
+    5: 'bed',
+    6: 'bee',
+    7: 'beetle',
+    8: 'bicycle',
+    9: 'bottle',
+    10: 'bowl',
+    11: 'boy',
+    12: 'bridge',
+    13: 'bus',
+    14: 'butterfly',
+    15: 'camel',
+    16: 'can',
+    17: 'castle',
+    18: 'caterpillar',
+    19: 'cattle',
+    20: 'chair',
+    21: 'chimpanzee',
+    22: 'clock',
+    23: 'cloud',
+    24: 'cockroach',
+    25: 'couch',
+    26: 'crab',
+    27: 'crocodile',
+    28: 'cup',
+    29: 'dinosaur',
+    30: 'dolphin',
+    31: 'elephant',
+    32: 'flatfish',
+    33: 'forest',
+    34: 'fox',
+    35: 'girl',
+    36: 'hamster',
+    37: 'house',
+    38: 'kangaroo',
+    39: 'keyboard',
+    40: 'lamp',
+    41: 'lawn_mower',
+    42: 'leopard',
+    43: 'lion',
+    44: 'lizard',
+    45: 'lobster',
+    46: 'man',
+    47: 'maple_tree',
+    48: 'motorcycle',
+    49: 'mountain',
+    50: 'mouse',
+    51: 'mushroom',
+    52: 'oak_tree',
+    53: 'orange',
+    54: 'orchid',
+    55: 'otter',
+    56: 'palm_tree',
+    57: 'pear',
+    58: 'pickup_truck',
+    59: 'pine_tree',
+    60: 'plain',
+    61: 'plate',
+    62: 'poppy',
+    63: 'porcupine',
+    64: 'possum',
+    65: 'rabbit',
+    66: 'raccoon',
+    67: 'ray',
+    68: 'road',
+    69: 'rocket',
+    70: 'rose',
+    71: 'sea',
+    72: 'seal',
+    73: 'shark',
+    74: 'shrew',
+    75: 'skunk',
+    76: 'skyscraper',
+    77: 'snail',
+    78: 'snake',
+    79: 'spider',
+    80: 'squirrel',
+    81: 'streetcar',
+    82: 'sunflower',
+    83: 'sweet_pepper',
+    84: 'table',
+    85: 'tank',
+    86: 'telephone',
+    87: 'television',
+    88: 'tiger',
+    89: 'tractor',
+    90: 'train',
+    91: 'trout',
+    92: 'tulip',
+    93: 'turtle',
+    94: 'wardrobe',
+    95: 'whale',
+    96: 'willow_tree',
+    97: 'wolf',
+    98: 'woman',
+    99: 'worm'
+}
+
 
 class TrainerConfig:
     # optimization parameters
@@ -117,6 +219,7 @@ class Trainer:
                         lam = 1-(length**2/(h*w))
                         for _ in range(1):
                             bbx1, bby1, bbx2, bby2 = rand_bbox(x.size(), lam)
+                            x[:, :, bbx1:bbx2, bby1:bby2] = 0.
                     else:
                         lam = np.random.beta(1.0,1.0)
                         rand_index = torch.randperm(x.size()[0]).to(self.device)
@@ -129,28 +232,79 @@ class Trainer:
                         elif method=='mixup':
                             x = lam * x + (1 - lam) * x[rand_index, :, :]
 
+                # Create a directory to save the images
+                save_dir = "image_output"
+                os.makedirs(save_dir, exist_ok=True)
+
                 # visualize
                 num_imgs = 3
+
                 fig = plt.figure(figsize=(num_imgs * 5, 6), dpi=100)
                 for numkk in range(num_imgs):
-                    ax = fig.add_subplot(1, num_imgs, numkk + 1, xticks=[], yticks=[])
-                    img = x[numkk].cpu().numpy().transpose(1, 2, 0)
-                    img = (img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
-                    # if method == 'baseline':
-                    #     title = "{}\nlabel:{}".format(method, class_indices[int(y[numkk].cpu().numpy())])
-                    # elif method == 'cutout':
-                    #     title = "{}\nlabel:{}({})".format(method, class_indices[int(y[numkk].cpu().numpy())],
-                    #                                       np.round(lam, 2))
-                    # else:
-                    #     title = "{}\nlabel:{}({})\nadd label:{}({})".format(method,
-                    #                                                         class_indices[int(target_a[numkk].cpu().numpy())],
-                    #                                                         np.round(lam, 2),
-                    #                                                         class_indices[int(target_b[numkk].cpu().numpy())],
-                    #                                                         np.round(1 - lam, 2))
-                    # ax.set_title(title)
-                    plt.axis('off')
-                    plt.imshow(img.astype('uint8'))
-                plt.show()
+                    if method == 'baseline':    # baseline不需要可视化，为了对照，这里也可视化一下
+                        img_path = os.path.join(save_dir,'baseline')
+                        os.makedirs(img_path,exist_ok=True)
+                        img_path = os.path.join(save_dir,'baseline',f"image_{str(batch_idx)}.png")
+                        ax = fig.add_subplot(4, num_imgs, numkk + 1, xticks=[], yticks=[])
+                        img = x[numkk].cpu().numpy().transpose(1, 2, 0)
+                        img = (img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
+                        title = "Original\nlabel:{}".format(class_indices[int(y[numkk].cpu().numpy())])
+                        ax.set_title(title)
+                        plt.axis('off')
+                        plt.imshow(img.astype('uint8'))
+                        if numkk==2:
+                            plt.savefig(img_path)
+                    elif method == 'cutmix':
+                        cutmix_img_path = os.path.join(save_dir, 'cutmix')
+                        os.makedirs(cutmix_img_path, exist_ok=True)
+                        cutmix_img_path = os.path.join(save_dir, 'cutmix', f"cutmix_image_{str(batch_idx)}.png")
+                        ax = fig.add_subplot(4, num_imgs, numkk + num_imgs + 1, xticks=[], yticks=[])
+                        cutmix_img = x[numkk].cpu().numpy().transpose(1, 2, 0)
+                        cutmix_img = (cutmix_img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
+                        title = "CutMix\nlabel:{}\nadd label:{}".format(
+                            class_indices[int(target_a[numkk].cpu().numpy())],
+                            class_indices[int(target_b[numkk].cpu().numpy())]
+                        )
+                        ax.set_title(title)
+                        plt.axis('off')
+                        plt.imshow(cutmix_img.astype('uint8'))
+                        if numkk == 2:
+                            plt.savefig(cutmix_img_path)
+                    elif method == 'cutout':
+                        cutout_img_path = os.path.join(save_dir, 'cutout')
+                        os.makedirs(cutout_img_path, exist_ok=True)
+                        cutout_img_path = os.path.join(save_dir, 'cutout', f"cutout_image_{str(batch_idx)}.png")
+                        ax = fig.add_subplot(4, num_imgs, numkk + 2 * num_imgs + 1, xticks=[], yticks=[])
+                        cutout_img = x[numkk].cpu().numpy().transpose(1, 2, 0)
+                        cutout_img = (cutout_img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
+                        title = "Cutout\nlabel:{}\narea:{}".format(
+                            class_indices[int(y[numkk].cpu().numpy())],
+                            np.round(lam, 2)
+                        )
+                        ax.set_title(title)
+                        plt.axis('off')
+                        plt.imshow(cutout_img.astype('uint8'))
+                        if numkk == 2:
+                            plt.savefig(cutout_img_path)
+                    elif method == 'mixup':
+                        mixup_img_path = os.path.join(save_dir,'mixup')
+                        os.makedirs(mixup_img_path,exist_ok=True)
+                        mixup_img_path = os.path.join(save_dir, 'mixup', f"mixup_image_{str(batch_idx)}.png")
+                        ax = fig.add_subplot(4, num_imgs, numkk + 3 * num_imgs + 1, xticks=[], yticks=[])
+                        mixup_img = x[numkk].cpu().numpy().transpose(1,2,0)
+                        mixup_img = (mixup_img * [0.2023, 0.1994, 0.2010] + [0.4914, 0.4822, 0.4465]) * 255
+                        title = "Mixup\nlabel:{}\nadd label:{}".format(
+                            class_indices[int(target_a[numkk].cpu().numpy())],
+                            class_indices[int(target_b[numkk].cpu().numpy())]
+                        )
+                        ax.set_title(title)
+                        plt.axis('off')
+                        plt.imshow(mixup_img.astype('uint8'))
+                        if numkk == 2:
+                            plt.savefig(mixup_img_path)
+
+                plt.tight_layout()
+                plt.close(fig)
 
                 # forward the model
                 with torch.set_grad_enabled(is_train):
