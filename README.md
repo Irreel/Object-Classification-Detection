@@ -14,7 +14,9 @@ Download dataset into `data/` folder.
 Model is saved into `logs/` by default, you can customized it via `--save-folder` argument.
 
 ## Training
+Simply run
 `python train.py --method baseline`
+Other `method` could be `mixup`, `cutmix` and `cutout`
 
 - Batch size: 128
 - Optimizer: Adam
@@ -26,11 +28,3 @@ Model is saved into `logs/` by default, you can customized it via `--save-folder
 - Tensorboard results:
 Given the file in `/logs`,
 open tensorboard via `tensorboard --logdir ./tensorboard`
-
-
-[实验报告(Google Docs)](https://docs.google.com/document/d/1f-ELCHgz8NBzv_fX20z3Q0d2B0p74GKE2hnWBn19QKQ/edit?usp=sharing)
-
-详细的实验报告包括实验设置：
-
-数据集介绍，训练测试集划分，网络结构，batch size，learning rate，优化器，iteration，epoch，loss function，评价指标，检测/分割结果可视化；
-利用Tensorboard可视化训练和测试的loss曲线、测试mAP/Acc/mIoU 曲线。
