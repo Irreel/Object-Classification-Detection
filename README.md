@@ -34,10 +34,10 @@ Model architecture: ResNet18
 
 Method: Baseline
 
-![Train loss](https://github.com/Irreel/Object-Classification-Detection/blob/main/loss_train.png?#pic_left =400x)
+![Train loss](https://github.com/Irreel/Object-Classification-Detection/blob/main/loss_train.png?#pic_left=400x)
 
-![Valid loss](https://github.com/Irreel/Object-Classification-Detection/blob/main/loss_valid.png?#pic_left =400x)
+![Valid loss](https://github.com/Irreel/Object-Classification-Detection/blob/main/loss_valid.png?#pic_left=400x)
 
-![Acc@5](https://github.com/Irreel/Object-Classification-Detection/blob/main/acc.png?#pic_left =400x)
+![Acc@5](https://github.com/Irreel/Object-Classification-Detection/blob/main/acc.png?#pic_left=400x)
 
 (Smoothing == 0.6)
