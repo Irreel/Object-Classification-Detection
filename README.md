@@ -26,9 +26,12 @@ Other `method` could be `mixup`, `cutmix` and `cutout`
 
 model    | batch size | lr | epoch | method | train loss | valid loss | acc@5
 ---------|-----|-------|-----|--------|--------|--------|--------|
-ResNet18 | 128 | 1e-3 | 30   | baseline  | 1.147292  | 1.967063   | 0.788469  |
-ResNet18 | 128 | 1e-3 | 80   | baseline  | 0.101848  | 3.024865   | 0.774229  | 
-ResNet101| 128 | 1e-3 | 30   | baseline  | 2.297507  | 14.033395  | 0.620847  | 
+ResNet18 | 128 | 1e-3 | 30   | baseline  | 1.14729  | 1.967063  | **0.788469** |
+ResNet18 | 128 | 1e-3 | 80   | baseline  | 0.10185  | 3.024865  | 0.774229 | 
+ResNet101| 128 | 1e-3 | 30   | baseline  | 2.29751  | 14.033395  | 0.620847 | 
+ResNet18 | 128 | 1e-3 | 30   | cutmix  |  3.57314 |  2.194764  | 0.752769 |
+ResNet18 | 128 | 1e-3 | 30   | cutout  | 1.85152  |  2.012332  | 0.775514 |
+ResNet18 | 128 | 1e-3 | 30   | mixup  | 3.15058  |  2.177603  | 0.748517 |
 
 
 ## Visualization results
